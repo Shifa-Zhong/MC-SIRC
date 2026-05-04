@@ -1,0 +1,39 @@
+# ===== Project data and outputs (intentionally excluded) =====
+# Raw / processed monitoring & rainfall data — see README for acquisition
+data/
+# Calculation outputs, figures, reports
+output/
+# GIS shapefiles (large, hosted separately)
+gis/
+
+# ===== Drafts, references, archives (private) =====
+paper/
+reference/
+archive/
+
+# ===== Project-internal docs and Q&A =====
+docs/
+20260402*
+CLAUDE.md
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# ===== OS / IDE =====
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code local state
+.claude/
