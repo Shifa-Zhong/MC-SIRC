@@ -38,25 +38,8 @@ desktop.ini
 # Claude Code local state
 .claude/
 
-# ===== Manuscript-formatting scripts (kept locally, not for the public analysis repo) =====
-# These scripts modify the manuscript .docx (numbering, captions, polish, layout, etc.)
-# and are not part of the data-analysis pipeline.
-scripts/reporting/update_word_docs.py
-scripts/reporting/restructure_main_tables.py
-scripts/reporting/polish_manuscript.py
-scripts/reporting/embed_figures_in_docx.py
-scripts/reporting/add_methods_purpose.py
-scripts/reporting/add_study_area_section.py
-scripts/reporting/apply_si_renumber.py
-scripts/reporting/check_si_citations.py
-scripts/reporting/cleanup_si_headings.py
-scripts/reporting/fix_si_caption_corruption.py
-scripts/reporting/full_polish_round14.py
-scripts/reporting/normalize_formulas.py
-scripts/reporting/polish_round12.py
-scripts/reporting/renumber_refs_strict_order.py
-scripts/reporting/renumber_si_all.py
-scripts/reporting/renumber_si_tables.py
-scripts/reporting/reorder_si_physical.py
-scripts/reporting/verify_si_renumber.py
-scripts/reporting/_si_renumber_map.json
+# ===== Reporting scripts (kept locally, not part of the public analysis repo) =====
+# All of scripts/reporting/ is for figure generation, manuscript-format editing,
+# and visualization. The public analysis pipeline lives in
+# scripts/{preprocessing,calculation,optimization,analysis,verification,advanced_analysis}.
+scripts/reporting/
