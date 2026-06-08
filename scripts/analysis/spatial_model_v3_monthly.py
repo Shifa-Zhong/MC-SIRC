@@ -708,86 +708,109 @@ monitor_raw_file = ROOT / 'data' / 'raw' / 'monitor.xlsx'
 cross_year_results = {}
 
 try:
-    df_raw = pd.read_excel(monitor_raw_file, header=1)
+    # FIX: 原 Excel 第 2 行是表头, 第 3 行是单位行, 必须跳过
+    df_raw = pd.read_excel(monitor_raw_file, header=1, skiprows=[2])
+    if '监测时间' not in df_raw.columns:
+        raise KeyError(f"未找到 '监测时间' 列, 实际列: {df_raw.columns.tolist()[:8]}...")
     df_raw['监测时间'] = pd.to_datetime(df_raw['监测时间'], errors='coerce')
-    df_raw = df_raw.dropna(subset=['监测时间'])
+    df_raw = df_raw.dropna(subset=['监测时间']).copy()
     df_raw['year'] = df_raw['监测时间'].dt.year
 
-    # 检查哪些年份有足够数据
-    avail_years = sorted(df_raw['year'].unique())
-    rpt(f"\n  原始数据可用年份: {avail_years}")
-
-    flow_col = '瞬时流量(m³/s)' if '瞬时流量(m³/s)' in df_raw.columns else None
+    # FIX: 确保流量列与浓度列均为数值型（原数据 dtype=object 会导致 *3.6 报错）
+    flow_col = next((c for c in df_raw.columns if '流量' in c), None)
     if flow_col is None:
-        for c in df_raw.columns:
-            if '流量' in c:
-                flow_col = c
-                break
+        raise KeyError(f"未找到流量列, 实际列: {df_raw.columns.tolist()}")
+    df_raw[flow_col] = pd.to_numeric(df_raw[flow_col], errors='coerce')
+    for col in pollutant_cols.values():
+        if col in df_raw.columns:
+            df_raw[col] = pd.to_numeric(df_raw[col], errors='coerce')
 
-    if flow_col:
-        for year in avail_years:
-            if year == 2022:
-                continue
-            df_y = df_raw[df_raw['year'] == year].copy()
-            # 检查数据完整性
-            has_flow = df_y[flow_col].notna().sum()
-            has_conc = all(
-                col in df_y.columns and df_y[col].notna().sum() > 100
-                for col in pollutant_cols.values()
-            )
-            if has_flow < 100 or not has_conc:
-                rpt(f"  {year}年: 数据不足 (流量{has_flow}条), 跳过")
-                continue
+    avail_years = sorted(int(y) for y in df_raw['year'].unique())
+    rpt(f"\n  原始数据可用年份: {avail_years}")
+    rpt(f"  流量列: '{flow_col}'")
 
-            # 计算该年月度负荷
-            df_y['month'] = df_y['监测时间'].dt.month
-            year_monthly = {}
-            for m in df_y['month'].unique():
-                mask = df_y['month'] == m
-                year_monthly[m] = {}
-                for p, col in pollutant_cols.items():
-                    if col in df_y.columns:
-                        loads = df_y.loc[mask, col] * df_y.loc[mask, flow_col] * 3.6
-                        year_monthly[m][p] = loads.sum()
+    # FIX: 阈值降至 20 条/年, 适配数据稀疏的早期年份
+    MIN_VALID_HOURS = 20
 
-            # 用2022年参数预测
-            rpt(f"\n  {year}年独立验证 (使用2022年最优参数):")
-            for p in pollutants:
-                if p not in results_2p:
+    for year in avail_years:
+        if year == 2022:
+            continue
+        df_y = df_raw[df_raw['year'] == year].copy()
+        df_y['month'] = df_y['监测时间'].dt.month
+        has_flow = int(df_y[flow_col].notna().sum())
+
+        # FIX: 每个污染物独立检查; 仅累计浓度+流量同时非空小时
+        year_monthly = {}
+        for m in sorted(df_y['month'].unique()):
+            mask = df_y['month'] == m
+            year_monthly[m] = {}
+            for p, col in pollutant_cols.items():
+                if col not in df_y.columns:
                     continue
-                k_2022 = results_2p[p]['k']
-                gamma_2022 = results_2p[p]['gamma']
+                valid = mask & df_y[col].notna() & df_y[flow_col].notna()
+                if valid.sum() == 0:
+                    continue
+                load_kg = (df_y.loc[valid, col] * df_y.loc[valid, flow_col] * 3.6).sum()
+                year_monthly[m][p] = (float(load_kg), int(valid.sum()))
 
-                year_obs = []
-                year_pred = []
-                for m in sorted(year_monthly.keys()):
-                    if p not in year_monthly[m] or year_monthly[m][p] <= 0:
-                        continue
-                    obs_val = year_monthly[m][p]
-                    # 预测: 使用相同的月度分配因子(假设排放模式不变)
-                    pred_val = compute_load_monthly(
-                        k_2022, gamma_2022, p, m,
-                        pt_dist_default, cu_dist_default
-                    )
-                    year_obs.append(obs_val)
-                    year_pred.append(pred_val)
+        from calendar import monthrange
 
-                if len(year_obs) >= 3:
-                    obs_arr = np.array(year_obs)
-                    prd_arr = np.array(year_pred)
-                    r2_cross = 1 - np.sum((prd_arr - obs_arr)**2) / np.sum((obs_arr - obs_arr.mean())**2)
-                    total_err_cross = (prd_arr.sum() - obs_arr.sum()) / obs_arr.sum() * 100
-                    rpt(f"    {p}: R² = {r2_cross:.4f}, 年总偏差 = {total_err_cross:+.1f}% "
-                        f"({len(year_obs)}个月)")
-                    cross_year_results.setdefault(year, {})[p] = {
-                        'r2': r2_cross, 'total_err': total_err_cross
-                    }
-    else:
-        rpt(f"  未找到流量列, 跳过跨年验证")
+        rpt(f"\n  {year}年独立验证 (使用 2022 年最优参数, 仅含 ≥{MIN_VALID_HOURS}h 有效观测的月):")
+        for p in pollutants:
+            if p not in results_2p:
+                continue
+            k_2022 = results_2p[p]['k']
+            gamma_2022 = results_2p[p]['gamma']
+
+            year_obs_scaled, year_pred, valid_months, coverage_pct = [], [], [], []
+            for m in sorted(year_monthly.keys()):
+                if p not in year_monthly[m]:
+                    continue
+                obs_val, n_hours = year_monthly[m][p]
+                if n_hours < MIN_VALID_HOURS or obs_val <= 0:
+                    continue
+                # FIX: 把实测累计按 coverage 比例外推为全月当量, 与 v3 预测同口径
+                hours_in_month = monthrange(int(year), int(m))[1] * 24
+                obs_full_month = obs_val * hours_in_month / n_hours
+                pred_val = compute_load_monthly(
+                    k_2022, gamma_2022, p, m,
+                    pt_dist_default, cu_dist_default
+                )
+                year_obs_scaled.append(obs_full_month)
+                year_pred.append(pred_val)
+                valid_months.append(int(m))
+                coverage_pct.append(n_hours / hours_in_month * 100)
+
+            if len(year_obs_scaled) >= 3:
+                obs_arr = np.array(year_obs_scaled)
+                prd_arr = np.array(year_pred)
+                # R² (绝对量级): obs 已按 coverage 外推到全月, 与预测同口径
+                ss_res = float(np.sum((prd_arr - obs_arr)**2))
+                ss_tot = float(np.sum((obs_arr - obs_arr.mean())**2))
+                r2 = 1 - ss_res / ss_tot if ss_tot > 0 else float('nan')
+                # NRMSE (相对量级)
+                nrmse = float(np.sqrt(ss_res / len(obs_arr)) / obs_arr.mean()) if obs_arr.mean() > 0 else float('nan')
+                # 总量偏差
+                total_err = (prd_arr.sum() - obs_arr.sum()) / obs_arr.sum() * 100
+                rpt(f"    {p}: 月数={len(year_obs_scaled)}, R²={r2:+.3f}, "
+                    f"NRMSE={nrmse*100:.1f}%, 总量偏差={total_err:+.1f}%, "
+                    f"月份={valid_months}, 平均覆盖={np.mean(coverage_pct):.0f}%")
+                cross_year_results.setdefault(year, {})[p] = {
+                    'r2': r2, 'nrmse': nrmse, 'total_err_pct': total_err,
+                    'n_months': len(year_obs_scaled),
+                    'obs_total_scaled': float(obs_arr.sum()),
+                    'pred_total': float(prd_arr.sum()),
+                    'avg_coverage_pct': float(np.mean(coverage_pct)),
+                }
+            elif len(year_obs_scaled) > 0:
+                rpt(f"    {p}: 仅 {len(year_obs_scaled)} 月有效观测, 不足以做形态比较")
 
 except Exception as e:
-    rpt(f"  跨年验证出错: {e}")
-    rpt(f"  注: 如需跨年验证, 确保 data/raw/monitor.xlsx 包含多年数据")
+    import traceback
+    rpt(f"  跨年验证出错: {type(e).__name__}: {e}")
+    rpt(f"  Traceback (简):")
+    for line in traceback.format_exc().splitlines()[-3:]:
+        rpt(f"    {line}")
 
 # ============================================================
 # 第10部分: 综合结论与v2对比
