@@ -1,0 +1,46 @@
+{
+  "revision": "2026-08-24-identifiability-audit",
+  "random_seeds": {
+    "map_multistart": 42,
+    "mcmc": 42,
+    "monte_carlo": 42,
+    "spatial_profile": 42
+  },
+  "monitoring_hours_2022": {
+    "expected": 8760,
+    "observed_unique": 5928,
+    "absent": 2832
+  },
+  "missing_data_scenarios": {
+    "S1": "observed timestamps only",
+    "S2": "month-specific coverage scaling (default)",
+    "S3": "annual mean scaling by 8760/5928",
+    "S4": "observed load plus 1.5 times the S2-imputed portion"
+  },
+  "bayesian": {
+    "factor_bounds": [0.1, 2.0],
+    "observation_error_fraction": 0.1,
+    "map_starts": 30,
+    "mcmc_walkers": 32,
+    "mcmc_steps": 20000,
+    "mcmc_burn_in": 5000,
+    "prior_conflict_tiers": {
+      "A": "z > 2; strong prior conflict, not identifiability",
+      "B": "1 < z <= 2; moderate prior conflict",
+      "C": "z <= 1; no resolved prior conflict"
+    }
+  },
+  "forward_monte_carlo": {
+    "iterations": 10000,
+    "emission_cv": 0.2,
+    "nominal_entry_multiplier": [0.5, 1.5],
+    "output_scope": "nominal river-entry load before in-stream transport"
+  },
+  "spatial_identifiability_profile": {
+    "k_min_km-1": 0.0,
+    "k_max_km-1": 0.3,
+    "k_step_km-1": 0.001,
+    "gamma": "profiled analytically without bounds",
+    "null_model": "k = 0 flow-only"
+  }
+}

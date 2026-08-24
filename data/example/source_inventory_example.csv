@@ -1,0 +1,11 @@
+source_id,source_category,pollutant,emission_kg,nominal_entry_kg,distance_km,monthly_profile_id
+EX001,rural_domestic,COD,12500,7700,12.0,flow
+EX001,rural_domestic,NH3N,210,130,12.0,flow
+EX002,agricultural_nps,TN,2400,160,22.0,agricultural
+EX002,agricultural_nps,TP,85,6,22.0,agricultural
+EX003,large_livestock,COD,42000,13000,38.0,flow
+EX003,large_livestock,TP,680,210,38.0,flow
+EX004,industrial,COD,5100,3300,9.0,flow
+EX004,industrial,TP,95,62,9.0,flow
+EX005,central_facility,COD,6200,6200,7.0,flow
+EX005,central_facility,TN,4300,4300,7.0,flow
