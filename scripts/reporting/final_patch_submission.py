@@ -96,19 +96,26 @@ def patch_multipanel_captions():
 
 
 def main():
-    patch_repository_tag()
-    patch_multipanel_captions()
+    finalizer.ARCHIVE.mkdir(parents=True, exist_ok=True)
+    finalizer.postprocess_manuscript()
+    finalizer.build_standalone_abstract()
+    finalizer.postprocess_si()
     patch_si()
+    finalizer.postprocess_cover_and_ga()
     finalizer.build_exact_response()
+    finalizer.prepare_submission_artwork()
     subprocess.run([sys.executable, str(ROOT / "scripts" / "reporting" / "generate_word_level_highlights_v2.py")], check=True)
     for name in [
-        "SI_Final.docx", "Response_Letter.docx", "SI_Highlighted_20260824.docx",
-        "Manuscript_Highlighted_20260824.docx", "Abstract_Highlighted_20260824.docx",
+        "Manuscript_Final_MC-SIRC.docx", "SI_Final.docx", "Abstract.docx", "Response_Letter.docx",
+        "SI_Highlighted_20260824.docx", "Manuscript_Highlighted_20260824.docx",
+        "Abstract_Highlighted_20260824.docx", "GA.docx", "cover letter.docx", "highlights.docx",
+        "declarationStatement.docx", "Figure_Captions.docx",
     ]:
         path = finalizer.PAPER / name
         if path.exists():
             finalizer.prune_docx_media(path)
-    print("Final terminology synchronization complete")
+            finalizer.prune_empty_docx_comments(path)
+    print("Final independent-acceptance repairs complete")
 
 
 if __name__ == "__main__":

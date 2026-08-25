@@ -51,8 +51,8 @@ def figure_block(cursor, document, label, image_path, caption):
     picture = paragraph_after(heading._p, document)
     picture.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = picture.add_run()
-    run.add_picture(str(image_path), width=Inches(6.25))
-    caption_paragraph = paragraph_after(picture._p, document, caption, blue=True, size=8.5)
+    run.add_picture(str(image_path), width=Inches(7.4))
+    caption_paragraph = paragraph_after(picture._p, document, caption, blue=True, size=9.0)
     caption_paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     return caption_paragraph._p
 
@@ -84,9 +84,9 @@ def table_block(cursor, document, label, source_table, caption, row_limit=None):
             table_xml.remove(row)
     heading._p.addnext(table_xml)
     table = Table(table_xml, document._body)
-    font_size = 5.8 if len(table.columns) >= 9 else 6.5 if len(table.columns) >= 7 else 7.2
+    font_size = 7.0 if len(table.columns) >= 9 else 7.5 if len(table.columns) >= 7 else 8.0
     style_blue_table(table, font_size)
-    caption_paragraph = paragraph_after(table_xml, document, caption, blue=True, size=8.5)
+    caption_paragraph = paragraph_after(table_xml, document, caption, blue=True, size=9.0)
     caption_paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     return caption_paragraph._p
 

@@ -21,6 +21,7 @@ import pandas as pd
 from PIL import Image
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 from docx import Document
+from docx.enum.section import WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -46,7 +47,7 @@ FIG_S2 = ROOT / "output" / "figures" / "figureS2_monthly_loads"
 GA_IMAGE = ROOT / "output" / "figures" / "revision4" / "graphical_abstract_identifiability.png"
 ARCHIVE = PAPER / "_archive_non_submission_20260824" / "finalization_20260825"
 MCMC_DIAGNOSTICS = ROOT / "output" / "results" / "revision5_mcmc_diagnostics.xlsx"
-TAG = "revision-2026-08-25.2"
+TAG = "revision-2026-08-25.3"
 FIGURE3_CAPTION = (
     "Figure 3. Forward Monte Carlo uncertainty in nominal river-entry loads before in-stream transport for "
     "(a) COD, (b) NH₃-N, (c) TN, and (d) TP. Histograms show Monte Carlo probability densities; solid blue "
@@ -63,6 +64,13 @@ FIGURE4_CAPTION = (
     "shows that monthly outlet data add virtually no distance information under shared or assumed source calendars."
 )
 FIGURES1_CAPTION = FIGURE4_CAPTION.replace("Figure 4.", "Figure S1.", 1)
+FIGURES2_CAPTION = (
+    "Figure S2. Observed-hour (S1) monthly outlet loads and timestamp coverage in 2022 for "
+    "(a) COD, (b) NH₃-N, (c) TN, and (d) TP. Blue lines with circles show observed-hour loads; "
+    "red lines with squares show timestamp coverage, and red dashed horizontal lines mark 50% coverage. "
+    "Gray months have <50% coverage and are excluded from the spatial-profile objective; all months remain "
+    "represented in the S1–S4 annual-load scenarios."
+)
 
 POLLUTANT_MAP = {"COD": "COD", "氨氮": "NH₃-N", "总氮": "TN", "总磷": "TP"}
 SOURCE_MAP = {
@@ -82,7 +90,7 @@ ABSTRACT_PARTS = [
     (
         "Study Region",
         "The Nanchuan River Basin (1,438 km²) is a hilly-gully Loess Plateau catchment in China. "
-        "A 2022 bottom-up inventory resolved over 1,588 unique 1-km grid IDs and 100 georeferenced "
+        "A 2022 bottom-up inventory resolved 1,588 unique 1-km grid IDs and 100 georeferenced "
         "source records is paired with 5,928 observed hourly records at one outlet station.",
     ),
     (
@@ -421,11 +429,11 @@ def set_title_page(doc):
     if author is not None:
         clear_paragraph(author)
         authors = [
-            ("Yujie Wang", "a"),
-            ("Jinhong Luo", "c"),
-            ("Weifeng Zhang", "a"),
-            ("Cheng Zhang", "a"),
-            ("Shifa Zhong", "b,*"),
+            ("Yujie Wang", "1,4"),
+            ("Jinhong Luo", "3,4"),
+            ("Weifeng Zhang", "1,4"),
+            ("Cheng Zhang", "1,4"),
+            ("Shifa Zhong", "2,4*"),
         ]
         for index, (name, marker) in enumerate(authors):
             if index:
@@ -434,14 +442,21 @@ def set_title_page(doc):
             run = author.add_run(marker)
             run.font.superscript = True
     affiliations = [
-        (("1.", "1 "), "a", "Shanxi Provincial Ecological Environment Planning and Technology Institute, Taiyuan 030009, China"),
-        (("2.", "2 "), "b", "College of Environmental Science and Engineering, Tongji University, Shanghai 200092, China"),
-        (("3.", "3 "), "c", "Shanxi Provincial Center for Ecological and Environmental Monitoring and Emergency Response, Taiyuan 030024, China"),
+        ("Shanxi Provincial Ecological Environment Planning and Technology Institute", "1", "Shanxi Provincial Ecological Environment Planning and Technology Institute, Taiyuan 030009, China"),
+        ("College of Environmental Science and Engineering, Tongji University", "2", "College of Environmental Science and Engineering, Tongji University, Shanghai 200092, China"),
+        ("Shanxi Provincial Center for Ecological and Environmental Monitoring and Emergency Response", "3", "Shanxi Provincial Center for Ecological and Environmental Monitoring and Emergency Response, Taiyuan 030024, China"),
+        ("Shanxi Key Laboratory of Water Pollution Prevention and Utilization", "4", "Shanxi Key Laboratory of Water Pollution Prevention and Utilization, Taiyuan 030009, China"),
     ]
-    for prefixes, marker, text in affiliations:
-        paragraph = next((p for p in doc.paragraphs if p.text.strip().startswith(prefixes)), None)
+    for institution, marker, text in affiliations:
+        paragraph = next((p for p in doc.paragraphs if institution in p.text), None)
         if paragraph is not None:
             set_affiliation_paragraph(paragraph, marker, text)
+    corresponding = find_prefix(doc, "*Corresponding Author:", optional=True)
+    if corresponding is not None:
+        corresponding.text = (
+            "*Corresponding Author: Shifa Zhong; College of Environmental Science and Engineering, Tongji University, "
+            "1239 Siping Road, Shanghai 200092, China; Email: sfzhong@tongji.edu.cn; Tel.: +86-21-65983869"
+        )
 
 
 def rewrite_structured_abstract(doc):
@@ -476,7 +491,7 @@ def postprocess_manuscript():
 
     replace_prefix(
         doc,
-        "The bottom-up 2022 inventory contains",
+        "The bottom-up 2022 inventory",
         "The bottom-up 2022 inventory uses a 1 km × 1 km grid framework for five area-source categories. "
         "Overlaying the grid with land-use and administrative units produces 53,155 polygon-intersection "
         "records assigned to 1,588 unique grid IDs (Table S1); 53,155 is therefore a record count rather than "
@@ -518,7 +533,7 @@ def postprocess_manuscript():
     )
     replace_prefix(
         doc,
-        "The same annual-mean protocol was also applied",
+        "The same annual-mean protocol was",
         "The same annual-mean protocol was applied to the 2020, 2021, and 2023 monitoring archives while holding "
         "the 2022 inventory fixed. This cross-year consistency check is conditional because the discrepancy factors "
         "absorb year-specific hydrology and unobserved source changes. Archive timestamp coverage and strict raw "
@@ -550,7 +565,14 @@ def postprocess_manuscript():
         "conditional consistency without confirming source coefficients; the 2020–2021 archives are too sparse for replication analysis.",
         body=True,
     )
-    replace_prefix(doc, "MC-SIRC now supports two", find_prefix(doc, "MC-SIRC now supports two").text.replace("MC-SIRC now supports", "MC-SIRC supports"), body=True)
+    decision_paragraph = find_prefix(doc, "MC-SIRC now supports two", optional=True)
+    if decision_paragraph is not None:
+        replace_prefix(
+            doc,
+            "MC-SIRC now supports two",
+            decision_paragraph.text.replace("MC-SIRC now supports", "MC-SIRC supports"),
+            body=True,
+        )
     replace_prefix(
         doc,
         "MC-SIRC reconciles a detailed watershed source inventory",
@@ -559,23 +581,32 @@ def postprocess_manuscript():
         "loads of 140.86 t COD, 4.785 t NH₃-N, 57.77 t TN, and 0.758 t TP. Bayesian regularization can allocate the "
         "aggregate discrepancy and flag persistent prior conflicts, but the annual Jacobian rank of 1 and nullity of "
         "8–9 show that individual factors are not identifiable. Four boundary conflicts persist across S1–S4 and "
-        "warrant field verification; they do not establish causal coefficient overestimation. Their cross-year recurrence "
-        "is conditional on a fixed 2022 inventory and does not constitute validation, especially for the sparse 2020–2021 archives.",
+        "warrant field verification; they do not establish causal coefficient overestimation.",
         body=True,
     )
-    replace_prefix(
+    conclusion_two = replace_prefix(
         doc,
         "The spatial audit reaches the same boundary",
         "The spatial audit reaches the same boundary: after profiling γ, a k = 0 flow-only model is effectively "
         "indistinguishable from the best decay profile (ΔR² ≤ 0.0033). The profile therefore leaves half-life distances, "
-        "effective-contribution shares, ranking inversions, and direct policy prescriptions unresolved. The principal "
-        "regional insight is that a flashy, sediment-active Loess Plateau catchment with flood-season observation gaps "
-        "cannot support source-specific transport inference from one outlet series alone. MC-SIRC converts the resulting "
-        "inventory–monitoring disagreement into transparent aggregate diagnostics and a monitoring roadmap; tributary "
-        "sections, seasonally resolved source inputs, and process-specific nitrogen and phosphorus observations are "
-        "prerequisites for source-level calibration and transfer beyond this basin.",
+        "effective-contribution shares, ranking inversions, and direct policy prescriptions unresolved. Flood-season MNAR "
+        "gaps add uncertainty, and cross-year recurrence remains conditional on a fixed 2022 inventory, especially for the "
+        "sparse 2020–2021 archives.",
         body=True,
     )
+    conclusion_three_text = (
+        "The principal regional insight is that a flashy, sediment-active Loess Plateau catchment with flood-season "
+        "observation gaps cannot support source-specific transport inference from one outlet series alone. MC-SIRC "
+        "converts the resulting inventory–monitoring disagreement into transparent aggregate diagnostics and a monitoring "
+        "roadmap; tributary sections, seasonally resolved source inputs, and process-specific nitrogen and phosphorus "
+        "observations are prerequisites for source-level calibration and transfer beyond this basin."
+    )
+    conclusion_three = find_prefix(doc, "The principal regional insight", optional=True)
+    if conclusion_three is None:
+        conclusion_three = base.simple_insert_after(conclusion_two, conclusion_three_text)
+    else:
+        conclusion_three.text = conclusion_three_text
+    submission.set_body_style(conclusion_three)
     replace_prefix(
         doc,
         "Figure 1.",
@@ -594,6 +625,10 @@ def postprocess_manuscript():
     for paragraph in doc.paragraphs[:reference_index]:
         if "modelling" in paragraph.text:
             paragraph.text = paragraph.text.replace("modelling", "modeling")
+            if paragraph.style.name == "Normal":
+                submission.set_body_style(paragraph)
+        if "Split-Rhat" in paragraph.text:
+            paragraph.text = paragraph.text.replace("Split-Rhat", "split R-hat")
             if paragraph.style.name == "Normal":
                 submission.set_body_style(paragraph)
 
@@ -770,9 +805,10 @@ def postprocess_si():
         replace_prefix(doc, f"Table S{number}.", f"Table S{number}. Prior sensitivity—{pollutant}, annual-mean sensitivity scenario S3.{prior_definition}")
 
     elasticity = doc.tables[27]
-    rows = [[row.cells[0].text, row.cells[1].text, row.cells[2].text, row.cells[4].text, row.cells[5].text]
-            for row in elasticity.rows[1:]]
-    base.replace_table(doc, 27, ["Pollutant", "Most sensitive input", "Elasticity", "Second most sensitive input", "Elasticity"], rows, font_size=7.8)
+    if len(elasticity.columns) >= 6:
+        rows = [[row.cells[0].text, row.cells[1].text, row.cells[2].text, row.cells[4].text, row.cells[5].text]
+                for row in elasticity.rows[1:]]
+        base.replace_table(doc, 27, ["Pollutant", "Most sensitive input", "Elasticity", "Second most sensitive input", "Elasticity"], rows, font_size=7.8)
     replace_prefix(doc, "Table S25.", "Table S25. Elasticity of nominal river-entry load to inventory inputs. Elasticity is an inventory-side variance sensitivity and is not an outlet contribution share.")
 
     crossyear = doc.tables[32]
@@ -808,7 +844,25 @@ def postprocess_si():
         image_paragraphs[1].alignment = WD_ALIGN_PARAGRAPH.CENTER
         image_paragraphs[1].add_run().add_picture(str(FIG_S2 / "figureS2_monthly_loads.png"), width=Inches(6.5))
     replace_prefix(doc, "Figure S1.", FIGURES1_CAPTION)
-    replace_prefix(doc, "Figure S2.", "Figure S2. Observed-hour (S1) monthly outlet loads and timestamp coverage in 2022. Gray months have <50% coverage and are excluded from the spatial-profile objective; all months remain represented in the S1–S4 annual-load scenarios.")
+    replace_prefix(doc, "Figure S2.", FIGURES2_CAPTION)
+
+    field_audit_note = find_prefix(doc, "★ marks", optional=True)
+    if field_audit_note is not None:
+        field_audit_note.text = (
+            "The four field-audit priority pairs are listed explicitly in Table S30. Their recurrence is a conditional "
+            "consistency pattern under a fixed inventory and prior system, not evidence that the source factors are data-identifiable."
+        )
+        submission.set_body_style(field_audit_note)
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    if "★" in paragraph.text:
+                        paragraph.text = paragraph.text.replace(" ★", "").replace("★", "")
+
+    for paragraph in doc.paragraphs:
+        if re.match(r"^Table S\d+\.", paragraph.text.strip()) and paragraph.text.strip()[-1:] not in ".?!":
+            paragraph.text = paragraph.text.rstrip() + "."
 
     text_s8 = find_prefix(doc, "Text S8.")
     text_s8.style = "Heading 2"
@@ -849,6 +903,24 @@ def postprocess_cover_and_ga():
             "Updated Highlights, Graphical Abstract, Supporting Information and response letter accompany the manuscript;",
             "Updated Highlights, a code-generated Graphical Abstract, Supporting Information, the study-area KML/KMZ, and the response letter accompany the manuscript;",
         )
+        if paragraph.text.startswith("Email: sfzhong@tongji.edu.cn"):
+            paragraph.text = "Email: sfzhong@tongji.edu.cn; Tel.: +86-21-65983869"
+        paragraph.paragraph_format.line_spacing = 1.0
+        paragraph.paragraph_format.space_before = Pt(0)
+        paragraph.paragraph_format.space_after = Pt(3)
+        for run in paragraph.runs:
+            run.font.name = "Times New Roman"
+            run._element.get_or_add_rPr().rFonts.set(qn("w:eastAsia"), "Times New Roman")
+            run.font.size = Pt(10.5)
+    normal = doc.styles["Normal"]
+    normal.font.name = "Times New Roman"
+    normal._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+    normal.font.size = Pt(10.5)
+    for section in doc.sections:
+        section.left_margin = Inches(0.7)
+        section.right_margin = Inches(0.7)
+        section.top_margin = Inches(0.6)
+        section.bottom_margin = Inches(0.6)
     doc.save(cover)
     shutil.copy2(cover, ARCHIVE / cover.name)
     ga = PAPER / "GA.docx"
@@ -857,7 +929,12 @@ def postprocess_cover_and_ga():
     paragraph = doc.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     paragraph.add_run().add_picture(str(GA_IMAGE), width=Inches(10.8))
+    paragraph.paragraph_format.space_before = Pt(0)
+    paragraph.paragraph_format.space_after = Pt(0)
     for section in doc.sections:
+        section.orientation = WD_ORIENT.LANDSCAPE
+        section.page_width = Inches(11.5)
+        section.page_height = Inches(5.8)
         section.left_margin = Inches(0.35)
         section.right_margin = Inches(0.35)
         section.top_margin = Inches(0.35)
@@ -899,6 +976,10 @@ def build_exact_response():
         "explicitly in captions and table columns. Undefined dagger marks were also removed from the author line. "
         "This eliminates the ambiguous symbol-spacing problem rather than replacing it with another marker."
     )
+    responses[27][0] = (
+        "We condensed the Conclusions into three brief paragraphs that separately state the main findings, limitations, "
+        "and broader regional and monitoring implications. Detailed numerical results remain in the Results and SI."
+    )
     responses[31][0] = (
         "We updated the submission files to the Journal of Hydrology: Regional Studies format. The abstract has "
         "three separate title-case labelled paragraphs within the 225-word limit; citations use author–year style; "
@@ -924,6 +1005,7 @@ def build_exact_response():
     ms_process = exact_paragraph(ms, "The absence of an identifiable k")
     ms_conclusion1 = exact_paragraph(ms, "MC-SIRC reconciles a detailed")
     ms_conclusion2 = exact_paragraph(ms, "The spatial audit reaches the same boundary")
+    ms_conclusion3 = exact_paragraph(ms, "The principal regional insight")
     ms_nav = exact_paragraph(ms, "Each MC-SIRC component")
     ms_data = exact_paragraph(ms, "The authoritative analysis package")
     si_text1 = exact_paragraph(si, "The 2022 archive contains")
@@ -945,7 +1027,7 @@ def build_exact_response():
         [item("Revised MS (§4.3):", ms_transfer)],
         [item("Revised MS (Table 1 caption):", exact_paragraph(ms, "Table 1."))],
         [item("Revised MS (Data availability):", ms_data), item("Revised SI (Text S8):", exact_paragraph(si, f"Tagged repository snapshot:"))],
-        [item("Revised MS (Conclusion):", ms_conclusion2)],
+        [item("Revised MS (Conclusions):", "\n".join([ms_conclusion1, ms_conclusion2, ms_conclusion3]))],
         [item("Revised MS (§2.2):", ms_inventory), item("Revised MS (§3.1):", ms_results_inventory)],
         [item("Revised MS (§2.8):", ms_equation), item("Revised MS (§3.3):", ms_spatial)],
         [item("Revised MS (§3.3):", ms_spatial)],
@@ -962,7 +1044,7 @@ def build_exact_response():
         [item("Revised MS (Introduction):", exact_paragraph(ms, "Identifying and quantifying pollution sources")), item("Revised MS (contributions):", exact_paragraph(ms, "MC-SIRC makes five"))],
         [item("Revised MS (Figure 2 caption):", exact_paragraph(ms, "Figure 2.")), item("Revised MS (Figure 3 caption):", exact_paragraph(ms, "Figure 3."))],
         [item("Revised MS (§4.1):", ms_process)],
-        [item("Revised MS (Conclusion):", ms_conclusion2)],
+        [item("Revised MS (Conclusions):", "\n".join([ms_conclusion1, ms_conclusion2, ms_conclusion3]))],
         [item("Revised MS (§2.3):", ms_nav), item("Revised SI (Table S1 caption):", exact_paragraph(si, "Table S1.")), item("Revised SI (Table S17 caption):", exact_paragraph(si, "Table S17."))],
         [item("Revised SI (boundary presentation):", exact_paragraph(si, "Table S6.") + " " + exact_paragraph(si, "Table S33."))],
         [item("Revised SI (front matter):", si_abbr)],
@@ -1005,8 +1087,85 @@ def build_exact_response():
     for table_index, label in zip(range(17, 20), ["NH₃-N", "TN", "TP"]):
         add_table(28, f"Revised SI Table S17 ({label} continued panel):", table_index, "Table S17.")
     response_v4.base.style_document(response)
+    for section in response.sections:
+        section.orientation = WD_ORIENT.LANDSCAPE
+        section.page_width = Inches(11.69)
+        section.page_height = Inches(8.27)
+        section.left_margin = Inches(0.75)
+        section.right_margin = Inches(0.75)
+        section.top_margin = Inches(0.65)
+        section.bottom_margin = Inches(0.65)
     response.save(path)
     shutil.copy2(path, ARCHIVE / path.name)
+
+
+def prepare_submission_artwork():
+    """Place the four main figures and their captions in submission-ready files."""
+    sources = {
+        "Figure_1.pdf": FIG / "figure1_revised_framework.pdf",
+        "Figure_2.pdf": FIG / "figure2_identifiability_aware_bayesian.pdf",
+        "Figure_3.pdf": FIG / "figure3_forward_uncertainty.pdf",
+        "Figure_4.pdf": FIG / "figure4_spatial_identifiability_profile.pdf",
+    }
+    for name, source in sources.items():
+        if not source.exists():
+            raise FileNotFoundError(source)
+        shutil.copy2(source, PAPER / name)
+
+    manuscript = Document(PAPER / "Manuscript_Final_MC-SIRC.docx")
+    captions = [exact_paragraph(manuscript, f"Figure {number}.") for number in range(1, 5)]
+    document = Document()
+    normal = document.styles["Normal"]
+    normal.font.name = "Times New Roman"
+    normal._element.rPr.rFonts.set(qn("w:eastAsia"), "Times New Roman")
+    normal.font.size = Pt(11)
+    title = document.add_paragraph("Figure captions")
+    title.runs[0].bold = True
+    title.runs[0].font.size = Pt(13)
+    for caption in captions:
+        paragraph = document.add_paragraph(caption)
+        paragraph.paragraph_format.line_spacing = 1.15
+        paragraph.paragraph_format.space_after = Pt(8)
+    path = PAPER / "Figure_Captions.docx"
+    document.save(path)
+    shutil.copy2(path, ARCHIVE / path.name)
+
+
+def prune_empty_docx_comments(path: Path):
+    """Remove an empty Word comments part left by a document template."""
+    with zipfile.ZipFile(path, "r") as source:
+        entries = {name: source.read(name) for name in source.namelist()}
+    comments_name = "word/comments.xml"
+    if comments_name not in entries:
+        return
+    comments_xml = entries[comments_name].decode("utf-8", errors="replace")
+    if re.search(r"<w:comment(?:\s|>)", comments_xml):
+        return
+    document_xml = entries.get("word/document.xml", b"").decode("utf-8", errors="replace")
+    if re.search(r"<w:comment(?:RangeStart|RangeEnd|Reference)\b", document_xml):
+        raise RuntimeError(f"Comment references remain in {path}")
+    entries.pop(comments_name)
+
+    rels_name = "word/_rels/document.xml.rels"
+    if rels_name in entries:
+        root = ET.fromstring(entries[rels_name])
+        for relationship in list(root):
+            if relationship.attrib.get("Target", "").endswith("comments.xml"):
+                root.remove(relationship)
+        entries[rels_name] = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+    content_types = "[Content_Types].xml"
+    root = ET.fromstring(entries[content_types])
+    for override in list(root):
+        if override.attrib.get("PartName") == "/word/comments.xml":
+            root.remove(override)
+    entries[content_types] = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    with zipfile.ZipFile(temporary, "w", zipfile.ZIP_DEFLATED) as destination:
+        for name, payload in entries.items():
+            destination.writestr(name, payload)
+    os.replace(temporary, path)
 
 
 def prune_docx_media(path: Path):
@@ -1085,17 +1244,19 @@ def main():
     postprocess_si()
     postprocess_cover_and_ga()
     build_exact_response()
+    prepare_submission_artwork()
     subprocess.run([sys.executable, str(ROOT / "scripts" / "reporting" / "generate_study_area_kml.py")], check=True)
     subprocess.run([sys.executable, str(ROOT / "scripts" / "reporting" / "generate_word_level_highlights_v2.py")], check=True)
     for name in [
         "Manuscript_Final_MC-SIRC.docx", "SI_Final.docx", "Abstract.docx", "Response_Letter.docx",
         "Manuscript_Highlighted_20260824.docx", "SI_Highlighted_20260824.docx",
         "Abstract_Highlighted_20260824.docx", "GA.docx", "cover letter.docx", "highlights.docx",
-        "declarationStatement.docx",
+        "declarationStatement.docx", "Figure_Captions.docx",
     ]:
         path = PAPER / name
         if path.exists():
             prune_docx_media(path)
+            prune_empty_docx_comments(path)
     archive_working_files()
     print("Finalized submission package:", PAPER)
 

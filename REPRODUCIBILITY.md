@@ -5,8 +5,8 @@ This guide documents the analyses and reporting pipeline used for the 2026-08-25
 ## Stable snapshot
 
 - Repository: https://github.com/Shifa-Zhong/MC-SIRC
-- Revision tag: `revision-2026-08-25.2`
-- Stable URL: https://github.com/Shifa-Zhong/MC-SIRC/tree/revision-2026-08-25.2
+- Revision tag: `revision-2026-08-25.3`
+- Stable URL: https://github.com/Shifa-Zhong/MC-SIRC/tree/revision-2026-08-25.3
 - Parameters and seeds: `config/revision3_parameters.json`
 
 The tagged repository is the authoritative code package. No separate code ZIP is required.

@@ -54,8 +54,8 @@ The 2022 inventory uses a 1-km grid framework. Its 53,155 tabular rows are polyg
 
 ## Tagged revision
 
-- Tag: `revision-2026-08-25.2`
-- Stable URL: https://github.com/Shifa-Zhong/MC-SIRC/tree/revision-2026-08-25.2
+- Tag: `revision-2026-08-25.3`
+- Stable URL: https://github.com/Shifa-Zhong/MC-SIRC/tree/revision-2026-08-25.3
 - Parameters and seeds: `config/revision3_parameters.json`
 - Reproduction commands: `REPRODUCIBILITY.md`
 
@@ -73,7 +73,7 @@ Python 3.10 or later is recommended. Core calculations require pandas, NumPy, Sc
 
 Until the article is published, cite the tagged software release as:
 
-> Zhong, S. (2026). MC-SIRC: An Identifiability-Aware Workflow for Reconciling Watershed Source Inventories with Outlet Monitoring. GitHub repository, revision-2026-08-25.2.
+> Zhong, S. (2026). MC-SIRC: An Identifiability-Aware Workflow for Reconciling Watershed Source Inventories with Outlet Monitoring. GitHub repository, revision-2026-08-25.3.
 
 ## License and contact
 
