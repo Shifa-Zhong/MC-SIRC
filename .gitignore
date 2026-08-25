@@ -1,22 +1,17 @@
-# ===== Project data and outputs (intentionally excluded) =====
-# Raw / processed monitoring & rainfall data — see README for acquisition
+# Raw and processed study data are controlled or too large for the public repository.
 data/
-# Calculation outputs, figures, reports
 output/
-# GIS shapefiles (large, hosted separately)
 gis/
 
-# ===== Drafts, references, archives (private) =====
+# Manuscript files and internal working materials are not part of the code release.
 paper/
 reference/
 archive/
-
-# ===== Project-internal docs and Q&A =====
 docs/
 20260402*
 CLAUDE.md
 
-# ===== Python =====
+# Python and local environments.
 __pycache__/
 *.py[cod]
 *$py.class
@@ -26,7 +21,7 @@ __pycache__/
 .venv/
 venv/
 
-# ===== OS / IDE =====
+# OS, IDE, and agent state.
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -34,12 +29,27 @@ desktop.ini
 .idea/
 *.swp
 *.swo
-
-# Claude Code local state
 .claude/
+.agents/
+.codex/
 
-# ===== Reporting scripts (kept locally, not part of the public analysis repo) =====
-# All of scripts/reporting/ is for figure generation, manuscript-format editing,
-# and visualization. The public analysis pipeline lives in
-# scripts/{preprocessing,calculation,optimization,analysis,verification,advanced_analysis}.
-scripts/reporting/
+# Reporting scripts are private by default, but the reproducibility-critical
+# scientific figure/document builders used for the tagged revision are public.
+scripts/reporting/*
+!scripts/reporting/build_revision3_documents.py
+!scripts/reporting/build_revision3_response_letter.py
+!scripts/reporting/build_revision4_submission.py
+!scripts/reporting/build_revision4_response_letter.py
+!scripts/reporting/augment_revision4_response_with_figures_tables.py
+!scripts/reporting/generate_revision3_figure1.py
+!scripts/reporting/generate_revision3_figures.py
+!scripts/reporting/generate_word_level_highlights.py
+!scripts/reporting/generate_word_level_highlights_v2.py
+!scripts/reporting/generate_study_area_kml.py
+!scripts/reporting/finalize_revision5_submission.py
+!scripts/reporting/audit_revision4_consistency.py
+!scripts/reporting/validate_revision4_deliverables.py
+
+# Local patch/audit scratch space.
+patch_work_*/
+apply_patch_probe.txt
