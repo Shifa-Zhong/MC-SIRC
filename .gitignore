@@ -33,22 +33,13 @@ desktop.ini
 .agents/
 .codex/
 
-# Reporting scripts are private by default, but the reproducibility-critical
-# scientific figure/document builders used for the tagged revision are public.
-scripts/reporting/*
-!scripts/reporting/build_revision3_documents.py
-!scripts/reporting/build_revision3_response_letter.py
-!scripts/reporting/build_revision4_submission.py
-!scripts/reporting/build_revision4_response_letter.py
-!scripts/reporting/augment_revision4_response_with_figures_tables.py
-!scripts/reporting/generate_revision3_figure1.py
-!scripts/reporting/generate_revision3_figures.py
-!scripts/reporting/generate_word_level_highlights.py
-!scripts/reporting/generate_word_level_highlights_v2.py
-!scripts/reporting/generate_study_area_kml.py
-!scripts/reporting/finalize_revision5_submission.py
-!scripts/reporting/audit_revision4_consistency.py
-!scripts/reporting/validate_revision4_deliverables.py
+# Keep the public repository limited to the core scientific pipeline.
+# Dedicated plotting, manuscript/response generation, and validation scripts
+# remain local and are not tracked.
+scripts/reporting/
+scripts/verification/
+scripts/preprocessing/analyze_rainfall_missing.py
+scripts/analysis/compare_monitored_vs_calculated.py
 
 # Local patch/audit scratch space.
 patch_work_*/

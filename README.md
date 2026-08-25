@@ -26,13 +26,11 @@ scripts/
   calculation/         inventory and monitoring load calculations
   optimization/        MAP and MCMC reconciliation
   analysis/            missingness, rank/nullity, profile, and sensitivity diagnostics
-  reporting/           reproducibility-critical final figures and revision builders
-  verification/        intermediate calculation checks
 REPRODUCIBILITY.md
 requirements.txt
 ```
 
-The public tag includes the reporting scripts referenced by the reproduction guide. Manuscript Word files, controlled raw observations, and large GIS inputs are not distributed in the code repository.
+The public tag is intentionally limited to the core scientific pipeline. Dedicated plotting, manuscript/response generation, formatting, and validation scripts are not distributed. Manuscript Word files, controlled raw observations, and large GIS inputs are also excluded.
 
 ## Data structure
 
@@ -45,7 +43,6 @@ data/raw/
   data(1).xlsx
 data/processed/
 output/results/
-output/figures/
 ```
 
 `data/example/` contains station-anonymized schemas. Raw hourly water-quality records are controlled by the local environmental authority and may be requested from the corresponding author for academic use, subject to approval.
@@ -67,7 +64,7 @@ No separate code ZIP is required; the tagged repository is the authoritative cod
 python -m pip install -r requirements.txt
 ```
 
-Python 3.10 or later is recommended. Core calculations require pandas, NumPy, SciPy, and openpyxl. MCMC requires emcee. Scientific figures and study-area KML/KMZ generation additionally use matplotlib, Pillow, GeoPandas, Shapely, and pyproj.
+Python 3.10 or later is recommended. Core calculations require pandas, NumPy, SciPy, and openpyxl. MCMC requires emcee; several retained scientific-analysis routines also use matplotlib and dbfread.
 
 ## Citation
 

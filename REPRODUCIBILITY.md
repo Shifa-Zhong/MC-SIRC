@@ -1,6 +1,6 @@
-# MC-SIRC revision reproducibility
+# MC-SIRC core computational reproducibility
 
-This guide documents the analyses and reporting pipeline used for the 2026-08-25 identifiability-aware revision.
+This guide documents the core computational analyses used for the 2026-08-25 identifiability-aware revision.
 
 ## Stable snapshot
 
@@ -28,7 +28,6 @@ data/raw/
   data(1).xlsx
 data/processed/
 output/results/
-output/figures/
 ```
 
 `data/example/` provides station-anonymized schemas. Real hourly monitoring data and large GIS layers are controlled inputs and are not included in the public repository.
@@ -53,30 +52,9 @@ output/results/revision5_mcmc_diagnostics.xlsx
 
 `revision5_mcmc_diagnostics.py` repeats the stated S3 MCMC analysis with 32 walkers, 20,000 steps, 5,000 burn-in steps, and seed 42. It reports posterior summaries, 95% credible intervals, mean acceptance fractions, split-Rhat, autocorrelation time, and effective sample size.
 
-## Reproduce final scientific figures
+## Repository scope
 
-```powershell
-python scripts/reporting/generate_revision5_figures.py
-```
-
-This command generates Figures 1–4, Figure S2, and the code-generated graphical abstract. It applies explicit NA cells, neutral spatial-profile terminology, and the actual 50% monthly-coverage rule. Exact basin maps require the controlled map asset under `output/figures/figure1a_watershed_standalone/`.
-
-Generate the study-area KML/KMZ, when the controlled GIS shapefile is available, with:
-
-```powershell
-python scripts/reporting/generate_study_area_kml.py
-```
-
-## Rebuild revision documents
-
-The document pipeline additionally requires the locked pre-revision Word files and reviewer comments under the private `paper/_archive_non_submission_20260824/` directory:
-
-```powershell
-python scripts/reporting/finalize_revision5_submission.py
-python scripts/reporting/final_patch_submission.py
-```
-
-These commands rebuild the clean MS, SI, standalone Abstract, figures, response letter, and word-level highlighted files; rerun MCMC convergence diagnostics; generate KML/KMZ; remove orphan DOCX media; and synchronize final terminology. Because the private Word baselines and controlled data are not public, document rebuilding records provenance but is not expected to run from a data-free clone.
+The tagged release contains only the core data preparation, load calculation, optimization, and scientific-analysis code. Dedicated figure drawing, manuscript/SI/response-letter generation, Word formatting/highlighting, and submission-validation scripts are deliberately excluded.
 
 ## Interpretation boundary
 

@@ -8,12 +8,5 @@ matplotlib>=3.4.0
 # Bayesian sampling
 emcee>=3.0.0
 
-# Word and raster reporting
-python-docx>=0.8.11
-Pillow>=9.0.0
-
-# GIS/KML generation and legacy DBF inspection
-geopandas>=1.0.0
-shapely>=2.0.0
-pyproj>=3.5.0
+# Legacy DBF input used by the retained spatial analysis
 dbfread>=2.0.0
