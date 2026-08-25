@@ -46,7 +46,7 @@ FIG_S2 = ROOT / "output" / "figures" / "figureS2_monthly_loads"
 GA_IMAGE = ROOT / "output" / "figures" / "revision4" / "graphical_abstract_identifiability.png"
 ARCHIVE = PAPER / "_archive_non_submission_20260824" / "finalization_20260825"
 MCMC_DIAGNOSTICS = ROOT / "output" / "results" / "revision5_mcmc_diagnostics.xlsx"
-TAG = "revision-2026-08-25"
+TAG = "revision-2026-08-25.1"
 
 POLLUTANT_MAP = {"COD": "COD", "氨氮": "NH₃-N", "总氮": "TN", "总磷": "TP"}
 SOURCE_MAP = {
@@ -95,43 +95,66 @@ def panel_label(ax, label):
     ax.text(-0.12, 1.05, label, transform=ax.transAxes, fontsize=13, fontweight="bold", va="top")
 
 
-def workflow_box(ax, y, text, color, height=0.115):
+def workflow_box(ax, y, text, color, height=0.13, fontsize=17.5, edgecolor="#444444"):
     patch = FancyBboxPatch(
-        (0.12, y), 0.76, height,
+        (0.04, y), 0.92, height,
         boxstyle="round,pad=0.012,rounding_size=0.015",
-        facecolor=color, edgecolor="#444444", linewidth=1.0,
+        facecolor=color, edgecolor=edgecolor, linewidth=1.35,
     )
     ax.add_patch(patch)
-    ax.text(0.50, y + height / 2, text, ha="center", va="center", fontsize=10.3, fontweight="bold")
+    label = ax.text(
+        0.50, y + height / 2, text,
+        ha="center", va="center", fontsize=fontsize, fontweight="bold", linespacing=1.08,
+    )
+    return patch, label
 
 
 def generate_figure1():
     map_image = Image.open(ROOT / "output" / "figures" / "figure1a_watershed_standalone" / "figure1a_watershed.png")
-    fig, axes = plt.subplots(1, 2, figsize=(16, 7.2), gridspec_kw={"width_ratios": [1.55, 1]})
+    fig, axes = plt.subplots(1, 2, figsize=(18, 8.5), gridspec_kw={"width_ratios": [1.30, 1.20]})
     axes[0].imshow(map_image)
     axes[0].axis("off")
-    axes[0].set_title("(a) Nanchuan River Basin: inventory sources and outlet station", loc="left", fontsize=12, fontweight="bold")
+    axes[0].set_title("(a) Nanchuan River Basin: inventory sources and outlet station", loc="left", fontsize=18, fontweight="bold")
     ax = axes[1]
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
-    ax.set_title("(b) Identifiability-aware MC-SIRC workflow", loc="left", fontsize=12, fontweight="bold")
+    ax.set_title("(b) Identifiability-aware MC-SIRC workflow", loc="left", fontsize=18, fontweight="bold")
     entries = [
-        (0.82, "Inventory + outlet monitoring\n1,588 unique 1-km grid IDs; 100 georeferenced sources; 5,928 observed hours", "#fdd49e"),
-        (0.64, "Missing-data scenarios\nmonthly default + lower and enhanced-gap sensitivities", "#c7e9c0"),
-        (0.46, "Prior-regularized aggregate reconciliation\nMAP/MCMC allocations within one evidence system", "#c6dbef"),
-        (0.28, "Formal identifiability audit\nJacobian rank, null-space solutions, k = 0 profile", "#dadaeb"),
-        (0.10, "Supported outputs\naggregate discrepancy, prior-conflict flags, monitoring priorities", "#fcbba1"),
+        (0.815, "Inventory and outlet monitoring\n1,588 unique 1-km grid IDs\n100 sources | 5,928 observed hours", "#fdd49e"),
+        (0.650, "Missing-data scenarios\nMonthly default and lower-bound\nEnhanced-gap sensitivity", "#c7e9c0"),
+        (0.485, "Prior-regularized reconciliation\nMAP/MCMC source allocations\nwithin a common evidence system", "#c6dbef"),
+        (0.320, "Formal identifiability audit\nJacobian rank | null-space solutions\nk = 0 profile", "#dadaeb"),
+        (0.155, "Supported outputs\nAggregate discrepancy | prior-conflict flags\nMonitoring priorities", "#fcbba1"),
     ]
+    framed_text = []
     for y, text, color in entries:
-        workflow_box(ax, y, text, color)
-    for y1, y2 in zip([0.82, 0.64, 0.46, 0.28], [0.755, 0.575, 0.395, 0.215]):
-        ax.add_patch(FancyArrowPatch((0.5, y1), (0.5, y2), arrowstyle="-|>", mutation_scale=13,
-                                     linewidth=1.2, color="#444444"))
-    ax.text(0.5, 0.035, "Unresolved at the current monitoring resolution: source-specific attenuation,\n"
-                        "half-lives, effective outlet shares, and policy re-ranking",
-            ha="center", va="center", fontsize=9.5, color="#8b0000")
-    fig.tight_layout()
+        framed_text.append(workflow_box(ax, y, text, color))
+    for current, following in zip(entries[:-1], entries[1:]):
+        ax.add_patch(FancyArrowPatch(
+            (0.5, current[0]), (0.5, following[0] + 0.13), arrowstyle="-|>", mutation_scale=18,
+            linewidth=1.5, color="#444444",
+        ))
+    framed_text.append(workflow_box(
+        ax, 0.010,
+        "Not resolved at current monitoring resolution\n"
+        "Source-specific attenuation and half-lives\n"
+        "Effective outlet shares and policy re-ranking",
+        "#fff5f0", height=0.11, fontsize=15.0, edgecolor="#8b0000",
+    ))
+    fig.tight_layout(pad=0.8)
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    for patch, label in framed_text:
+        frame = patch.get_window_extent(renderer)
+        text_extent = label.get_window_extent(renderer)
+        if not (
+            text_extent.x0 >= frame.x0 + 4
+            and text_extent.x1 <= frame.x1 - 4
+            and text_extent.y0 >= frame.y0 + 3
+            and text_extent.y1 <= frame.y1 - 3
+        ):
+            raise RuntimeError(f"Panel 1b text exceeds its frame: {label.get_text()!r}")
     FIG.mkdir(parents=True, exist_ok=True)
     fig.savefig(FIG / "figure1_revised_framework.png", dpi=400, bbox_inches="tight")
     fig.savefig(FIG / "figure1_revised_framework.pdf", bbox_inches="tight")
@@ -804,7 +827,9 @@ def postprocess_cover_and_ga():
     cover = PAPER / "cover letter.docx"
     doc = Document(cover)
     for paragraph in doc.paragraphs:
-        paragraph.text = paragraph.text.replace("revision-2026-08-24", TAG)
+        normalized = re.sub(r"revision-2026-08-(?:24|25(?:\.1)*)", TAG, paragraph.text)
+        if normalized != paragraph.text:
+            paragraph.text = normalized
         paragraph.text = paragraph.text.replace(
             "Updated Highlights, Graphical Abstract, Supporting Information and response letter accompany the manuscript;",
             "Updated Highlights, a code-generated Graphical Abstract, Supporting Information, the study-area KML/KMZ, and the response letter accompany the manuscript;",

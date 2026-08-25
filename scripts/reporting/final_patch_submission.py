@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -54,7 +55,29 @@ def patch_si():
     shutil.copy2(path, finalizer.ARCHIVE / path.name)
 
 
+def patch_repository_tag():
+    for name in ["Manuscript_Final_MC-SIRC.docx", "SI_Final.docx", "cover letter.docx"]:
+        path = finalizer.PAPER / name
+        document = Document(path)
+        paragraphs = list(document.paragraphs)
+        for table in document.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    paragraphs.extend(cell.paragraphs)
+        for paragraph in paragraphs:
+            normalized = re.sub(
+                r"revision-2026-08-(?:24|25(?:\.1)*)",
+                finalizer.TAG,
+                paragraph.text,
+            )
+            if normalized != paragraph.text:
+                paragraph.text = normalized
+        document.save(path)
+        shutil.copy2(path, finalizer.ARCHIVE / path.name)
+
+
 def main():
+    patch_repository_tag()
     patch_si()
     finalizer.build_exact_response()
     subprocess.run([sys.executable, str(ROOT / "scripts" / "reporting" / "generate_word_level_highlights_v2.py")], check=True)
