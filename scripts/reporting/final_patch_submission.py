@@ -66,7 +66,7 @@ def patch_repository_tag():
                     paragraphs.extend(cell.paragraphs)
         for paragraph in paragraphs:
             normalized = re.sub(
-                r"revision-2026-08-(?:24|25(?:\.1)*)",
+                r"revision-2026-08-(?:24|25(?:\.\d+)*)",
                 finalizer.TAG,
                 paragraph.text,
             )
@@ -76,8 +76,28 @@ def patch_repository_tag():
         shutil.copy2(path, finalizer.ARCHIVE / path.name)
 
 
+def patch_multipanel_captions():
+    targets = {
+        "Manuscript_Final_MC-SIRC.docx": [
+            ("Figure 3.", finalizer.FIGURE3_CAPTION),
+            ("Figure 4.", finalizer.FIGURE4_CAPTION),
+        ],
+        "SI_Final.docx": [
+            ("Figure S1.", finalizer.FIGURES1_CAPTION),
+        ],
+    }
+    for name, replacements in targets.items():
+        path = finalizer.PAPER / name
+        document = Document(path)
+        for prefix, caption in replacements:
+            finalizer.replace_prefix(document, prefix, caption)
+        document.save(path)
+        shutil.copy2(path, finalizer.ARCHIVE / path.name)
+
+
 def main():
     patch_repository_tag()
+    patch_multipanel_captions()
     patch_si()
     finalizer.build_exact_response()
     subprocess.run([sys.executable, str(ROOT / "scripts" / "reporting" / "generate_word_level_highlights_v2.py")], check=True)

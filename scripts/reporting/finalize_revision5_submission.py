@@ -46,7 +46,23 @@ FIG_S2 = ROOT / "output" / "figures" / "figureS2_monthly_loads"
 GA_IMAGE = ROOT / "output" / "figures" / "revision4" / "graphical_abstract_identifiability.png"
 ARCHIVE = PAPER / "_archive_non_submission_20260824" / "finalization_20260825"
 MCMC_DIAGNOSTICS = ROOT / "output" / "results" / "revision5_mcmc_diagnostics.xlsx"
-TAG = "revision-2026-08-25.1"
+TAG = "revision-2026-08-25.2"
+FIGURE3_CAPTION = (
+    "Figure 3. Forward Monte Carlo uncertainty in nominal river-entry loads before in-stream transport for "
+    "(a) COD, (b) NH₃-N, (c) TN, and (d) TP. Histograms show Monte Carlo probability densities; solid blue "
+    "lines mark the Monte Carlo means, gray shading denotes the 5th–95th percentile intervals, and red dashed "
+    "lines mark the default S2 outlet loads. Separation between the inventory-side distributions and outlet "
+    "loads is an inventory–outlet scale discrepancy and does not independently establish source-coefficient "
+    "bias or in-stream loss."
+)
+FIGURE4_CAPTION = (
+    "Figure 4. Spatial identifiability profiles for (a) COD, (b) NH₃-N, (c) TN, and (d) TP, with γ solved "
+    "analytically at each k. Blue curves show relative-error SSE divided by its profile minimum; red dashed "
+    "lines mark the k = 0 flow-only null, and gray dotted lines mark the profile-minimum k rather than an "
+    "independently identified attenuation rate. Annotations report ΔR² relative to k = 0. The negligible ΔR² "
+    "shows that monthly outlet data add virtually no distance information under shared or assumed source calendars."
+)
+FIGURES1_CAPTION = FIGURE4_CAPTION.replace("Figure 4.", "Figure S1.", 1)
 
 POLLUTANT_MAP = {"COD": "COD", "氨氮": "NH₃-N", "总氮": "TN", "总磷": "TP"}
 SOURCE_MAP = {
@@ -566,12 +582,11 @@ def postprocess_manuscript():
         "Figure 1. (a) Nanchuan River Basin, georeferenced inventory sources, and the outlet monitoring station. "
         "(b) Identifiability-aware MC-SIRC workflow and outputs supported by the present single-station design.",
     )
+    replace_prefix(doc, "Figure 3.", FIGURE3_CAPTION)
     replace_prefix(
         doc,
         "Figure 4.",
-        "Figure 4. Spatial identifiability profiles with γ solved analytically at each k. Curves show relative-error "
-        "SSE divided by its profile minimum; dotted lines mark the profile minimum, not an independently identified "
-        "attenuation rate. The negligible ΔR² relative to k = 0 shows that monthly outlet data add virtually no distance information under shared or assumed source calendars.",
+        FIGURE4_CAPTION,
     )
 
     references = find_prefix(doc, "References")
@@ -792,7 +807,7 @@ def postprocess_si():
         clear_paragraph(image_paragraphs[1])
         image_paragraphs[1].alignment = WD_ALIGN_PARAGRAPH.CENTER
         image_paragraphs[1].add_run().add_picture(str(FIG_S2 / "figureS2_monthly_loads.png"), width=Inches(6.5))
-    replace_prefix(doc, "Figure S1.", "Figure S1. Spatial-profile identifiability audit with γ solved analytically at each k. Dotted lines mark the profile minimum, not an independently identified attenuation rate; negligible improvement relative to k = 0 leaves k unresolved under shared or assumed source calendars.")
+    replace_prefix(doc, "Figure S1.", FIGURES1_CAPTION)
     replace_prefix(doc, "Figure S2.", "Figure S2. Observed-hour (S1) monthly outlet loads and timestamp coverage in 2022. Gray months have <50% coverage and are excluded from the spatial-profile objective; all months remain represented in the S1–S4 annual-load scenarios.")
 
     text_s8 = find_prefix(doc, "Text S8.")
@@ -827,7 +842,7 @@ def postprocess_cover_and_ga():
     cover = PAPER / "cover letter.docx"
     doc = Document(cover)
     for paragraph in doc.paragraphs:
-        normalized = re.sub(r"revision-2026-08-(?:24|25(?:\.1)*)", TAG, paragraph.text)
+        normalized = re.sub(r"revision-2026-08-(?:24|25(?:\.\d+)*)", TAG, paragraph.text)
         if normalized != paragraph.text:
             paragraph.text = normalized
         paragraph.text = paragraph.text.replace(
